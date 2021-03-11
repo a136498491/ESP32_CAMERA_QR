@@ -16,10 +16,12 @@
 #include "freertos/event_groups.h"
 #include "esp_log.h"
 
-static char* TAG="QR";
+static char *TAG = "QR";
 
-static const char *data_type_str(int dt) {
-	switch (dt) {
+static const char *data_type_str(int dt)
+{
+	switch (dt)
+	{
 	case QUIRC_DATA_TYPE_NUMERIC:
 		return "NUMERIC";
 	case QUIRC_DATA_TYPE_ALPHA:
@@ -33,7 +35,8 @@ static const char *data_type_str(int dt) {
 	return "unknown";
 }
 
-void dump_cells(const struct quirc_code *code) {
+void dump_cells(const struct quirc_code *code)
+{
 	int u, v;
 
 	printf("    %d cells, corners:", code->size);
@@ -41,9 +44,11 @@ void dump_cells(const struct quirc_code *code) {
 		printf(" (%d,%d)", code->corners[u].x, code->corners[u].y);
 	printf("\n");
 
-	for (v = 0; v < code->size; v++) {
+	for (v = 0; v < code->size; v++)
+	{
 		printf("    ");
-		for (u = 0; u < code->size; u++) {
+		for (u = 0; u < code->size; u++)
+		{
 			int p = v * code->size + u;
 
 			if (code->cell_bitmap[p >> 3] & (1 << (p & 7)))
@@ -55,12 +60,13 @@ void dump_cells(const struct quirc_code *code) {
 	}
 }
 
-void dump_data(const struct quirc_data *data) {
+void dump_data(const struct quirc_data *data)
+{
 	printf("    Version: %d\n", data->version);
 	printf("    ECC level: %c\n", "MLHQ"[data->ecc_level]);
 	printf("    Mask: %d\n", data->mask);
 	printf("    Data type: %d (%s)\n", data->data_type,
-			data_type_str(data->data_type));
+		   data_type_str(data->data_type));
 	printf("    Length: %d\n", data->payload_len);
 	printf("    Payload: %s\n", data->payload);
 
@@ -68,12 +74,14 @@ void dump_data(const struct quirc_data *data) {
 		printf("    ECI: %d\n", data->eci);
 }
 
-static void dump_info(struct quirc *q) {
+static void dump_info(struct quirc *q)
+{
 	int count = quirc_count(q);
 	int i;
 
 	printf("%d QR-codes found:\n\n", count);
-	for (i = 0; i < count; i++) {
+	for (i = 0; i < count; i++)
+	{
 		struct quirc_code code;
 		struct quirc_data data;
 		quirc_decode_error_t err;
@@ -84,9 +92,12 @@ static void dump_info(struct quirc *q) {
 		dump_cells(&code);
 		printf("\n");
 
-		if (err) {
+		if (err)
+		{
 			printf("  Decoding FAILED: %s\n", quirc_strerror(err));
-		} else {
+		}
+		else
+		{
 			printf("  Decoding successful:\n");
 			dump_data(&data);
 		}
@@ -95,131 +106,213 @@ static void dump_info(struct quirc *q) {
 	}
 }
 
-void qr_recoginze(void *pdata) {
-     
-    // frane acquired in pdata.
-    camera_fb_t * fb = pdata;
+void qr_recoginze(void *pdata)
+{
 
-    sensor_t * sensor = esp_camera_sensor_get();
+	// frane acquired in pdata.
+	camera_fb_t *fb = pdata;
 
-	if( (pdata == NULL) || (sensor->status.framesize > FRAMESIZE_VGA))
+	sensor_t *sensor = esp_camera_sensor_get();
+
+	if ((pdata == NULL) || (sensor->status.framesize > FRAMESIZE_VGA))
 	{
-		ESP_LOGI(TAG,"Camera Size err");
-        esp_camera_fb_return(fb);
-		vTaskDelete(NULL) ;
+		ESP_LOGI(TAG, "Camera Size err");
+		esp_camera_fb_return(fb);
+		vTaskDelete(NULL);
 	}
-    
-    if( fb ){
-        printf("begin to qr_recoginze\r\n");
-        struct quirc *q;
-        struct quirc_data qd;
-        uint8_t *image;
-        q = quirc_new();
 
-        if (!q) {
-	        printf("can't create quirc object\r\n");
-            esp_camera_fb_return(fb);
-	        vTaskDelete(NULL) ;
-        }
-        
-        printf("begin to quirc_resize\r\n");
+	if (fb)
+	{
+		printf("begin to qr_recoginze\r\n");
+		struct quirc *q;
+		struct quirc_data qd;
+		uint8_t *image;
+		q = quirc_new();
 
-        if (quirc_resize(q, fb->width, fb->height) < 0)
-        {
-	        printf("quirc_resize err\r\n");
-	        quirc_destroy(q);
-            esp_camera_fb_return(fb);
-	        vTaskDelete(NULL) ;
-        }
-        
-        image = quirc_begin(q, NULL, NULL);
-        memcpy(image, fb->buf, fb->len);
-        quirc_end(q);
-        printf("quirc_end\r\n");
-        
-        int id_count = quirc_count(q);
-        if (id_count == 0) {
-	        fprintf(stderr, "Error: not a valid qrcode\n");
-	        quirc_destroy(q);
-            esp_camera_fb_return(fb);
-	        vTaskDelete(NULL) ;
-        }
+		if (!q)
+		{
+			printf("can't create quirc object\r\n");
+			esp_camera_fb_return(fb);
+			vTaskDelete(NULL);
+		}
 
-        struct quirc_code code;
-        quirc_extract(q, 0, &code);
-        quirc_decode(&code, &qd);
-        dump_info(q);
-        quirc_destroy(q);
-        
-        esp_camera_fb_return(fb);
-    }else {
-        ESP_LOGE(TAG, "Camera Capture Failed");    
-    }
+		printf("begin to quirc_resize\r\n");
+
+		if (quirc_resize(q, fb->width, fb->height) < 0)
+		{
+			printf("quirc_resize err\r\n");
+			quirc_destroy(q);
+			esp_camera_fb_return(fb);
+			vTaskDelete(NULL);
+		}
+
+		image = quirc_begin(q, NULL, NULL);
+		memcpy(image, fb->buf, fb->len);
+		quirc_end(q);
+		printf("quirc_end\r\n");
+
+		int id_count = quirc_count(q);
+		if (id_count == 0)
+		{
+			fprintf(stderr, "Error: not a valid qrcode\n");
+			quirc_destroy(q);
+			esp_camera_fb_return(fb);
+			vTaskDelete(NULL);
+		}
+
+		struct quirc_code code;
+		quirc_extract(q, 0, &code);
+		quirc_decode(&code, &qd);
+		dump_info(q);
+		quirc_destroy(q);
+
+		esp_camera_fb_return(fb);
+	}
+	else
+	{
+		ESP_LOGE(TAG, "Camera Capture Failed");
+	}
 
 	printf("finish recoginize\r\n");
-	vTaskDelete(NULL) ;
+	vTaskDelete(NULL);
 }
 
-void qr_recoginze_ex(void *pdata) {
-     
-    // frane acquired in pdata.
-    camera_fb_t * fb = pdata;
+void my_qr_recoginze(void *pdata)
+{
 
-    sensor_t * sensor = esp_camera_sensor_get();
+	// frane acquired in pdata.
+	camera_fb_t *fb = pdata;
 
-	if( (pdata == NULL) || (sensor->status.framesize > FRAMESIZE_VGA))
+	sensor_t *sensor = esp_camera_sensor_get();
+
+	if ((pdata == NULL) || (sensor->status.framesize > FRAMESIZE_VGA))
 	{
-		ESP_LOGI(TAG,"ex - Camera Size err ");
-        esp_camera_fb_return(fb);
+		ESP_LOGI(TAG, "Camera Size err");
+		//esp_camera_fb_return(fb);
+		vTaskDelete(NULL);
+	}
+
+	if (fb)
+	{
+		printf("begin to qr_recoginze\r\n");
+		struct quirc *q;
+		struct quirc_data qd;
+		uint8_t *image;
+		q = quirc_new();
+
+		if (!q)
+		{
+			printf("can't create quirc object\r\n");
+			//esp_camera_fb_return(fb);
+			vTaskDelete(NULL);
+		}
+
+		printf("begin to quirc_resize\r\n");
+
+		if (quirc_resize(q, fb->width, fb->height) < 0)
+		{
+			printf("quirc_resize err\r\n");
+			quirc_destroy(q);
+			//esp_camera_fb_return(fb);
+			vTaskDelete(NULL);
+		}
+
+		image = quirc_begin(q, NULL, NULL);
+		memcpy(image, fb->buf, fb->len);
+		quirc_end(q);
+		printf("quirc_end\r\n");
+
+		int id_count = quirc_count(q);
+		if (id_count == 0)
+		{
+			fprintf(stderr, "Error: not a valid qrcode\n");
+			quirc_destroy(q);
+			//esp_camera_fb_return(fb);
+			vTaskDelete(NULL);
+		}
+
+		struct quirc_code code;
+		quirc_extract(q, 0, &code);
+		quirc_decode(&code, &qd);
+		dump_info(q);
+		quirc_destroy(q);
+
+		//esp_camera_fb_return(fb);
+	}
+	else
+	{
+		ESP_LOGE(TAG, "Camera Capture Failed");
+	}
+
+	printf("finish recoginize\r\n");
+	vTaskDelete(NULL);
+}
+void qr_recoginze_ex(void *pdata)
+{
+
+	// frane acquired in pdata.
+	camera_fb_t *fb = pdata;
+
+	sensor_t *sensor = esp_camera_sensor_get();
+
+	if ((pdata == NULL) || (sensor->status.framesize > FRAMESIZE_VGA))
+	{
+		ESP_LOGI(TAG, "ex - Camera Size err ");
+		esp_camera_fb_return(fb);
 		return;
 	}
-    
-    if( fb ){
-        printf("ex - begin to qr_recoginze\r\n");
-        struct quirc *q;
-        struct quirc_data qd;
-        uint8_t *image;
-        q = quirc_new();
 
-        if (!q) {
-	        printf("ex - can't create quirc object\r\n");
-            esp_camera_fb_return(fb);
-	        return;
-        }
-        
-        printf("ex - begin to quirc_resize\r\n");
+	if (fb)
+	{
+		printf("ex - begin to qr_recoginze\r\n");
+		struct quirc *q;
+		struct quirc_data qd;
+		uint8_t *image;
+		q = quirc_new();
 
-        if (quirc_resize(q, fb->width, fb->height) < 0)
-        {
-	        printf("ex - quirc_resize err\r\n");
-	        quirc_destroy(q);
-            esp_camera_fb_return(fb);
-	        return;
-        }
-        
-        image = quirc_begin(q, NULL, NULL);
-        memcpy(image, fb->buf, fb->len);
-        quirc_end(q);
-        printf("ex - quirc_end\r\n");
-        
-        int id_count = quirc_count(q);
-        if (id_count == 0) {
-	        fprintf(stderr, "ex - Error: not a valid qrcode\n");
-	        quirc_destroy(q);
-            esp_camera_fb_return(fb);
-	        return;
-        }
+		if (!q)
+		{
+			printf("ex - can't create quirc object\r\n");
+			esp_camera_fb_return(fb);
+			return;
+		}
 
-        struct quirc_code code;
-        quirc_extract(q, 0, &code);
-        quirc_decode(&code, &qd);
-        dump_info(q);
-        quirc_destroy(q);
-        
-        esp_camera_fb_return(fb);
-    }else {
-        ESP_LOGE(TAG, "ex - Camera Capture Failed");    
-    }
+		printf("ex - begin to quirc_resize\r\n");
+
+		if (quirc_resize(q, fb->width, fb->height) < 0)
+		{
+			printf("ex - quirc_resize err\r\n");
+			quirc_destroy(q);
+			esp_camera_fb_return(fb);
+			return;
+		}
+
+		image = quirc_begin(q, NULL, NULL);
+		memcpy(image, fb->buf, fb->len);
+		quirc_end(q);
+		printf("ex - quirc_end\r\n");
+
+		int id_count = quirc_count(q);
+		if (id_count == 0)
+		{
+			fprintf(stderr, "ex - Error: not a valid qrcode\n");
+			quirc_destroy(q);
+			esp_camera_fb_return(fb);
+			return;
+		}
+
+		struct quirc_code code;
+		quirc_extract(q, 0, &code);
+		quirc_decode(&code, &qd);
+		dump_info(q);
+		quirc_destroy(q);
+
+		esp_camera_fb_return(fb);
+	}
+	else
+	{
+		ESP_LOGE(TAG, "ex - Camera Capture Failed");
+	}
 
 	printf("ex - finish recoginize\r\n");
 }

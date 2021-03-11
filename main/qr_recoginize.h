@@ -8,12 +8,14 @@
 #ifndef MAIN_QR_RECOGINIZE_H_
 #define MAIN_QR_RECOGINIZE_H_
 
-enum{
+enum
+{
 	RECONGIZE_OK,
 	RECONGIZE_FAIL
 };
+void my_qr_recoginze(void *pdata);
 
-void qr_recoginze(void *pdata);
+//void qr_recoginze(void *pdata);
 //int qr_recoginze() ;
 
 #endif /* MAIN_QR_RECOGINIZE_H_ */

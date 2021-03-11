@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "..\\..\\esp\\esp-idf-v4.1"
+		}
+	],
+	"settings": {
+		"idf.flashType": "UART",
+		"idf.portWin": "COM4",
+		"files.associations": {
+			"qr_recoginize.h": "c"
+		}
+	}
+}
